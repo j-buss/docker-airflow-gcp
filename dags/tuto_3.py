@@ -6,6 +6,7 @@ from airflow import DAG
 from airflow.operators.bash_operator import BashOperator
 from airflow.contrib.operators.bigquery_check_operator import BigQueryCheckOperator
 from airflow.contrib.operators.bigquery_operator import BigQueryOperator
+from airflow.contrib.operators.bigquery_operator import BigQueryCreateEmptyDatasetOperator
 from datetime import datetime, timedelta
 
 
@@ -17,6 +18,7 @@ default_args = {
     "email_on_failure": False,
     "email_on_retry": False,
     "retries": 1,
+    "schedule_interval": "@daily",
     "retry_delay": timedelta(minutes=5),
 }
 
@@ -37,17 +39,24 @@ t2 = BigQueryCheckOperator(
         dag=dag
     )
 
-t3 = BigQueryOperator(
-    task_id='bq_write_table',
-    use_legacy_sql=False,
-    write_disposition='WRITE_TRUNCATE',
-    allow_large_results=True,
-    sql='''
-    #standardSQL
-    SELECT
-      count(*)
-    FROM
-      `bigquery-public-data.bls.cpi_u`
-    ''',
-    destination_dataset_table='{{ var.value.output_full_tablename }}',
-    dag=dag)
+t3 = BigQueryCreateEmptyDatasetOperator(
+        task_id='bq_create_dataset',
+        dataset_id='{{ var.value.output_datasetname }}',
+        dag=dag
+    )
+
+t4 = BigQueryOperator(
+        task_id='bq_write_table',
+        use_legacy_sql=False,
+        write_disposition='WRITE_TRUNCATE',
+        allow_large_results=True,
+        sql='''
+        #standardSQL
+        SELECT
+          count(*)
+        FROM
+          `bigquery-public-data.bls.cpi_u`
+        ''',
+        destination_dataset_table='{{ var.value.output_full_tablename }}',
+        dag=dag
+    )
