@@ -28,7 +28,7 @@ t2 = BigQueryCheckOperator(
         task_id='bq_check',
         sql='''
         #standardSQL
-        SELECT 
+        SELECT
           count(*)
         FROM
           `bigquery-public-data.bls.cpi_u`
